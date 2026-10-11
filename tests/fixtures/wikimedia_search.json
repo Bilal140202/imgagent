@@ -1,0 +1,64 @@
+{
+  "batchcomplete": true,
+  "continue": {"gsroffset": "2", "continue": "||"},
+  "query": {
+    "pages": [
+      {
+        "pageid": 101,
+        "ns": 6,
+        "title": "File:Isdal Woman 1970.jpg",
+        "imageinfo": [
+          {
+            "url": "https://upload.wikimedia.org/wikipedia/commons/1/1a/Isdal_Woman_1970.jpg",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Isdal_Woman_1970.jpg",
+            "width": 2400,
+            "height": 1800,
+            "size": 950123,
+            "mime": "image/jpeg",
+            "extmetadata": {
+              "LicenseShortName": {"value": "CC BY-SA 4.0"},
+              "LicenseUrl": {"value": "https://creativecommons.org/licenses/by-sa/4.0"},
+              "Artist": {"value": "<a href=\"//commons.wikimedia.org/User:Example\">Bergen Archive</a>"},
+              "ImageDescription": {"value": "Police photograph of the <b>Isdal Woman</b> case, Bergen 1970."}
+            }
+          }
+        ]
+      },
+      {
+        "pageid": 102,
+        "ns": 6,
+        "title": "File:Isdal suitcase.png",
+        "imageinfo": [
+          {
+            "url": "https://upload.wikimedia.org/wikipedia/commons/2/2b/Isdal_suitcase.png",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Isdal_suitcase.png",
+            "width": 800,
+            "height": 600,
+            "size": 20123,
+            "mime": "image/png",
+            "extmetadata": {
+              "LicenseShortName": {"value": "Public domain"},
+              "Artist": {"value": "Unknown photographer"}
+            }
+          }
+        ]
+      },
+      {
+        "pageid": 103,
+        "ns": 6,
+        "title": "File:Isdal report.pdf",
+        "imageinfo": [
+          {
+            "url": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Isdal_report.pdf",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Isdal_report.pdf",
+            "width": 0,
+            "height": 0,
+            "size": 500000,
+            "mime": "application/pdf",
+            "extmetadata": {}
+          }
+        ]
+      }
+    ]
+  }
+}

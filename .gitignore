@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.tox/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# imgagent runtime state
+.imgagent/
+assets/
+*.part
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local secrets / env
+.env
+.env.*
+*.local.toml

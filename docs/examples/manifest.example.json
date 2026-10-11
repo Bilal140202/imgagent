@@ -1,0 +1,69 @@
+{
+  "schema_version": "imgagent.manifest/v1",
+  "manifest_id": "manifest-j-20261011T220229-5641",
+  "job": {
+    "id": "j-20261011T220229-5641",
+    "query": "Isdal Woman Norway 1970",
+    "status": "complete",
+    "params": {
+      "limit": 12,
+      "sources": [
+        "wikimedia",
+        "openverse",
+        "duckduckgo"
+      ],
+      "min_width": null,
+      "min_height": null,
+      "max_bytes": null,
+      "require_reuse_rights": true,
+      "prefer_authentic": false
+    },
+    "created_at": "2026-10-11T22:02:29Z",
+    "updated_at": "2026-10-11T22:02:42Z"
+  },
+  "generated_at": "2026-10-11T22:02:42Z",
+  "counts": {
+    "candidates": 1,
+    "assets": 1
+  },
+  "errors": [
+    {
+      "source": "duckduckgo",
+      "event": "source_error",
+      "detail": {
+        "error": "duckduckgo page fetch failed: timed out"
+      },
+      "at": "2026-10-11T22:02:42Z"
+    }
+  ],
+  "assets": [
+    {
+      "asset_id": "asset-586f22ac8bf2e090fba6",
+      "candidate_id": "cand-9ac9f850d59264df350e",
+      "job_id": "j-20261011T220229-5641",
+      "project": "isdal-demo",
+      "scene": null,
+      "file": {
+        "path": "/tmp/imgagent-demo/assets/isdal-demo/originals/isdalen--9ac9f850.jpg",
+        "sha256": "586f22ac8bf2e090fba622f90b025ec9f154543743e405c49ffe613cd6e229f6",
+        "byte_size": 2062189,
+        "width": 3264,
+        "height": 2448,
+        "format": "JPEG",
+        "thumbnail_path": "/tmp/imgagent-demo/assets/isdal-demo/thumbnails/isdalen--9ac9f850.jpg"
+      },
+      "provenance": {
+        "provider": "wikimedia",
+        "source_url": "https://upload.wikimedia.org/wikipedia/commons/5/59/Isdalen.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+        "source_page_url": "https://commons.wikimedia.org/wiki/File:Isdalen.JPG",
+        "creator": "Reinhardheydt",
+        "license_name": "Public domain",
+        "license_url": null,
+        "attribution": null
+      },
+      "rights_status": "verified_public_domain",
+      "authenticity": "unknown",
+      "downloaded_at": "2026-10-11T22:02:42Z"
+    }
+  ]
+}

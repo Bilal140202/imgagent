@@ -1,0 +1,36 @@
+{
+  "result_count": 2,
+  "page_count": 1,
+  "results": [
+    {
+      "id": "ov-1",
+      "url": "https://live.staticflickr.com/example1.jpg",
+      "thumbnail": "https://live.staticflickr.com/example1_thumb.jpg",
+      "foreign_landing_url": "https://www.flickr.com/photos/example/1",
+      "title": "Bergen harbour 1970",
+      "creator": "Flickr User",
+      "license": "by",
+      "license_version": "2.0",
+      "license_url": "https://creativecommons.org/licenses/by/2.0/",
+      "width": 1024,
+      "height": 768,
+      "filetype": "jpg",
+      "filesize": 220000,
+      "source": "flickr"
+    },
+    {
+      "id": "ov-2",
+      "url": "https://api.openverse.org/v1/images/example2/thumb/",
+      "foreign_landing_url": "https://example.org/museum/item/2",
+      "title": "Museum scan of 1970 document",
+      "creator": null,
+      "license": "cc0",
+      "license_version": "1.0",
+      "width": 600,
+      "height": 400,
+      "filetype": "png",
+      "filesize": null,
+      "source": "museum"
+    }
+  ]
+}

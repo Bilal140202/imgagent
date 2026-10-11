@@ -1,0 +1,77 @@
+# imgagent configuration example.
+# Copy to <workspace>/config.toml (default workspace: ./.imgagent/config.toml).
+# Every key is optional — defaults are sensible. Env vars override toml,
+# CLI flags override both. API keys come from environment variables only.
+
+[sources]
+# Default enabled set. Add custom source keys here or pass --sources at runtime.
+enabled = ["wikimedia", "openverse", "duckduckgo"]
+
+[sources.wikimedia]
+api_url = "https://commons.wikimedia.org/w/api.php"
+
+[sources.openverse]
+api_url = "https://api.openverse.org/v1/images"
+# Higher rate limits when OPENVERSE_API_KEY is set in the environment.
+
+[sources.duckduckgo]
+# Unofficial, best-effort. Failures are graceful and explicit.
+
+# --- Config-driven official APIs -------------------------------------------
+# Declare any official API that returns JSON. ${VAR} in values expands from
+# the environment; {query}/{limit}/{offset} are request placeholders.
+#
+# [sources.custom.unsplash]
+# endpoint = "https://api.unsplash.com/search/photos"
+# method = "GET"
+# params = { query = "{query}", per_page = "{limit}" }
+# headers = { Authorization = "Client-ID ${UNSPLASH_ACCESS_KEY}" }
+# results_path = "results"
+# rights_status = "permission_required"
+#
+# [sources.custom.unsplash.fields]
+# image_url = "urls.raw"
+# thumbnail_url = "urls.thumb"
+# title = "description|alt_description"
+# width = "width"
+# height = "height"
+# source_page_url = "links.html"
+#
+# [sources.custom.pexels]
+# endpoint = "https://api.pexels.com/v1/search"
+# params = { query = "{query}", per_page = "{limit}" }
+# headers = { Authorization = "${PEXELS_API_KEY}" }
+# results_path = "photos"
+# rights_status = "permission_required"
+#
+# [sources.custom.pexels.fields]
+# image_url = "src.original"
+# thumbnail_url = "src.tiny"
+# title = "photographer"
+# width = "width"
+# height = "height"
+# source_page_url = "url"
+
+[http]
+concurrency = 4            # parallel downloads
+connect_timeout = 10       # seconds
+read_timeout = 30          # seconds
+retries = 3                # bounded retries with exponential backoff + jitter
+backoff_base = 1.5
+max_bytes = 52428800       # 50 MiB hard cap per downloaded file
+max_redirects = 8
+verify_tls = true          # NEVER disable as a routine fallback
+allow_private_addr = false # development escape hatch for localhost/LAN (metadata IPs stay blocked)
+cache_ttl = 900            # seconds for API JSON cache (0 disables)
+
+[assets]
+# root = "/var/lib/imgagent/assets"   # default: <workspace-parent>/assets
+default_project = "default"
+thumbnails = true
+thumb_size = 256
+max_pixels = 80000000      # decompression-bomb guard (80 MP)
+
+[ranking]
+prefer_authentic = false       # boost year/historical-token matches
+require_reuse_rights = false   # drop unknown/restricted rights before ranking
+diversity_threshold = 6

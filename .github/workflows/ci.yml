@@ -66,4 +66,5 @@ jobs:
           imgagent --version
           imgagent agent-instructions | head -5
           imgagent status --json | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['ok']"
-          imgagent download --json 2>/dev/null; test $? -eq 2  # usage contract
+          imgagent download --json 2>/dev/null || code=$?  # usage contract
+          test "${code:-0}" -eq 2

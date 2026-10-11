@@ -87,6 +87,7 @@ class HttpClient:
             verify=cfg.security.verify_tls,
             timeout=httpx.Timeout(connect=cfg.connect_timeout, read=cfg.read_timeout, write=30.0, pool=30.0),
             follow_redirects=False,
+            limits=httpx.Limits(max_connections=32, max_keepalive_connections=16),
             headers={"User-Agent": cfg.user_agent, "Accept-Encoding": "gzip, deflate"},
         )
         self._cache = HttpCache(cfg.cache_dir, cfg.cache_ttl) if cfg.cache_dir else None

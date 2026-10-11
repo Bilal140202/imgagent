@@ -63,12 +63,12 @@ class MockServer:
     /img/slow              -> sleeps 2s then serves PNG (timeout test)
     /flaky/<n>             -> 500 for first <n> hits, then valid PNG (retry test)
     /always500             -> 500 every time
+    /always404             -> 404 every time
     /redirect/meta         -> 302 -> http://169.254.169.254/ (SSRF: must block)
     /redirect/loop         -> 302 -> itself (must hit redirect cap)
     /redirect/img          -> 302 -> /img/png/1 (allowed hop)
     /page/og               -> HTML page with og:image / JSON-LD / <img>
     /headers               -> echoes headers+query as JSON (UA test)
-    /notfound              -> 404
     """
 
     def __init__(self):
@@ -103,8 +103,16 @@ class MockServer:
         server = self
 
         class H(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"   # keep-alive: avoids CI connection churn
+
             def log_message(self, *a):  # silence
                 pass
+
+            def handle_one_request(self):
+                try:
+                    super().handle_one_request()
+                except (BrokenPipeError, ConnectionResetError):
+                    self.close_connection = True
 
             def _send(self, code: int, body: bytes, ctype: str = "application/octet-stream",
                       headers: dict | None = None):
@@ -200,7 +208,11 @@ class MockServer:
 
     # -- lifecycle ----------------------------------------------------------------
     def start(self) -> MockServer:
-        self._httpd = ThreadingHTTPServer(("127.0.0.1", 0), self.handler())
+        class Q(ThreadingHTTPServer):
+            daemon_threads = True
+            request_queue_size = 32
+
+        self._httpd = Q(("127.0.0.1", 0), self.handler())
         self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
         self._thread.start()
         self.base_url = f"http://127.0.0.1:{self._httpd.server_address[1]}"

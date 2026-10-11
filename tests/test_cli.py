@@ -100,9 +100,10 @@ def test_e2e_workflow(mock_env, ws_dir):
         return sum(v for k, v in mock_env.counts.items() if k.startswith("/img/"))
     hits_before = img_hits()
     code, payload, _ = run_cli(["download", "--ids", ids, "--json"])
-    assert code == 0
-    assert payload["data"]["downloads"]["skipped_exists"] == 2
-    assert img_hits() == hits_before
+    assert code == 0, payload
+    d6 = payload["data"]["downloads"]
+    assert d6["skipped_exists"] == 2, f"expected skip-on-resume, got: {d6}"
+    assert img_hits() == hits_before, f"re-download happened: {d6}"
 
     # 7. list --downloaded shows 2
     code, payload, _ = run_cli(["list", "--downloaded", "--json"])
@@ -113,10 +114,10 @@ def test_run_command_full_pipeline(mock_env, ws_dir):
     code, payload, _ = run_cli(
         ["run", "isdal woman", "--limit", "5", "--top", "3", "--out",
          str(ws_dir.parent / "assets-run"), "--project", "runproj", "--json"])
-    assert code == 0
+    assert code == 0, payload
     data = payload["data"]
     assert data["manifest_path"] and os.path.exists(data["manifest_path"])
-    assert data["downloads"]["downloaded"] == 3
+    assert data["downloads"]["downloaded"] == 3, f"downloads: {data['downloads']}\nresults: {data.get('download_results')}"
     results = data["download_results"]
     assert all(r["status"] in ("downloaded", "duplicate") for r in results)
     # assets root override respected

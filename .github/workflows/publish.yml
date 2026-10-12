@@ -1,12 +1,8 @@
 # Publishes imgagent to PyPI.
 #
-# Setup (one-time, choose ONE):
-#   A) Trusted publishing (recommended, no token): on pypi.org create a
-#      pending publisher for this project:
-#        owner=superz1402 repo=imgagent workflow=publish.yml
-#        environment=pypi
-#   B) API token: create a PyPI token and store it as the repository secret
-#      PYPI_API_TOKEN (GitHub → Settings → Secrets and variables → Actions).
+# Publishing uses the repository secret PYPI_API_TOKEN
+# (GitHub → Settings → Secrets and variables → Actions).
+# PyPI account: ansaribilal1402.
 #
 # Trigger: push a tag (v0.1.0) or run manually from the Actions tab.
 
@@ -43,8 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      # trusted publishing (PyPI OIDC)
-      id-token: write
+      contents: read
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -53,6 +48,6 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          # If using an API token instead of trusted publishing, add:
-          # password: ${{ secrets.PYPI_API_TOKEN }}
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist/

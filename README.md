@@ -153,6 +153,13 @@ pytest -m integration     # opt-in live-source tests
 ruff check src tests
 ```
 
+## Authors & owners
+
+- **[superz1402](https://github.com/superz1402)** — author, owner
+- **[Bilal140202](https://github.com/Bilal140202)** — author, owner
+- **[ansaribilal14](https://github.com/ansaribilal14)** — author, owner
+- **[hamza140202](https://github.com/hamza140202)** — author, owner
+
 ## License & attribution
 
 MIT — see [LICENSE](LICENSE). imgagent was built as an independent implementation; it studies

@@ -9,7 +9,18 @@ description = "Universal image discovery, search, listing, download and asset ag
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "superz1402" }]
+authors = [
+  { name = "superz1402" },
+  { name = "Bilal140202" },
+  { name = "ansaribilal14" },
+  { name = "hamza140202" },
+]
+maintainers = [
+  { name = "superz1402" },
+  { name = "Bilal140202" },
+  { name = "ansaribilal14" },
+  { name = "hamza140202" },
+]
 keywords = [
   "images", "image-search", "downloader", "assets", "agent",
   "wikimedia", "openverse", "mcp", "cli", "dataset",

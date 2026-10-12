@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>imgagent — the image acquisition agent</title>
+<meta name="description" content="imgagent discovers, ranks, downloads and verifies images from public sources — one command, one JSON contract, verified bytes. Built for AI agents.">
+<meta property="og:title" content="imgagent — the image acquisition agent">
+<meta property="og:description" content="Search → rank → download → verify → manifest. One command. Zero trust. Built for AI agents.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#07080c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2307080c'/><rect x='22' y='22' width='56' height='56' rx='10' fill='none' stroke='%23d4ff4f' stroke-width='7'/><circle cx='50' cy='50' r='9' fill='%23d4ff4f'/></svg>">
+<style>
+:root{
+  --bg:#07080c; --bg2:#0b0d13; --panel:#0e1017; --line:rgba(255,255,255,.08);
+  --ink:#f2f3f7; --mut:#8b91a7; --dim:#565c72;
+  --acid:#d4ff4f; --violet:#8b7bff; --cyan:#5fd4ff; --red:#ff5470;
+  --grad:linear-gradient(92deg,#d4ff4f 0%,#5fd4ff 48%,#8b7bff 100%);
+  --font-d:'Space Grotesk',sans-serif; --font-m:'JetBrains Mono',monospace; --font-b:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-b);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::selection{background:var(--acid);color:#0a0c10}
+a{color:inherit;text-decoration:none}
+/* ---------- ambient layers ---------- */
+.noise{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E")}
+.mesh{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.mesh::before{content:"";position:absolute;width:70vw;height:70vw;top:-28vw;right:-22vw;border-radius:50%;
+  background:radial-gradient(circle,rgba(139,123,255,.16),transparent 62%);filter:blur(50px);animation:drift 26s ease-in-out infinite alternate}
+.mesh::after{content:"";position:absolute;width:56vw;height:56vw;bottom:-24vw;left:-18vw;border-radius:50%;
+  background:radial-gradient(circle,rgba(212,255,79,.10),transparent 60%);filter:blur(60px);animation:drift 32s ease-in-out infinite alternate-reverse}
+@keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(-6vw,5vh) scale(1.12)}}
+.gridlines{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+  background-size:72px 72px;mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 40%,transparent 100%)}
+/* ---------- cursor ---------- */
+.cur{position:fixed;z-index:999;width:34px;height:34px;border:1px solid rgba(212,255,79,.65);border-radius:50%;pointer-events:none;
+  transform:translate(-50%,-50%);transition:width .25s,height .25s,background .25s,border-color .25s;mix-blend-mode:screen}
+.cur.on{width:64px;height:64px;background:rgba(212,255,79,.09);border-color:rgba(212,255,79,.95)}
+.cur-dot{position:fixed;z-index:999;width:4px;height:4px;background:var(--acid);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%)}
+@media(hover:none){.cur,.cur-dot{display:none}}
+/* ---------- progress ---------- */
+.prog{position:fixed;top:0;left:0;height:2px;width:0;background:var(--grad);z-index:998}
+/* ---------- nav ---------- */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+  padding:20px clamp(20px,4.5vw,64px);transition:background .35s,border-color .35s,padding .35s;border-bottom:1px solid transparent}
+nav.scrolled{background:rgba(7,8,12,.82);backdrop-filter:blur(14px);border-bottom-color:var(--line);padding-top:14px;padding-bottom:14px}
+.logo{font-family:var(--font-d);font-weight:700;font-size:19px;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.logo .mark{width:26px;height:26px;border:2px solid var(--acid);border-radius:7px;display:grid;place-items:center}
+.logo .mark i{width:8px;height:8px;background:var(--acid);border-radius:50%;display:block}
+.logo em{font-style:normal;color:var(--acid)}
+.nav-links{display:flex;gap:30px;font-family:var(--font-m);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.nav-links a{color:var(--mut);transition:color .2s;position:relative}
+.nav-links a:hover{color:var(--acid)}
+.nav-cta{font-family:var(--font-m);font-size:12px;padding:9px 18px;border:1px solid var(--line);border-radius:99px;color:var(--ink);
+  display:flex;align-items:center;gap:8px;transition:.25s;background:rgba(255,255,255,.03)}
+.nav-cta:hover{border-color:var(--acid);color:var(--acid);transform:translateY(-1px)}
+@media(max-width:900px){.nav-links{display:none}}
+/* ---------- hero ---------- */
+.hero{position:relative;z-index:3;min-height:100svh;display:flex;flex-direction:column;justify-content:center;
+  padding:130px clamp(20px,4.5vw,64px) 60px}
+.kicker{font-family:var(--font-m);font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--acid);
+  display:flex;align-items:center;gap:12px;margin-bottom:26px}
+.kicker::before{content:"";width:34px;height:1px;background:var(--acid)}
+.kicker .live{display:inline-flex;align-items:center;gap:6px;color:var(--mut);letter-spacing:.14em}
+.kicker .live i{width:6px;height:6px;border-radius:50%;background:var(--acid);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(212,255,79,.5)}50%{opacity:.6;box-shadow:0 0 0 5px rgba(212,255,79,0)}}
+.h-title{font-family:var(--font-d);font-weight:700;font-size:clamp(52px,10.5vw,148px);line-height:.92;letter-spacing:-.045em;text-transform:uppercase}
+.h-title .row{display:block;overflow:hidden}
+.h-title .row span{display:inline-block;transform:translateY(110%);animation:riseIn 1s cubic-bezier(.16,1,.3,1) forwards}
+.h-title .row:nth-child(2) span{animation-delay:.12s}
+.h-title .row:nth-child(3) span{animation-delay:.24s}
+@keyframes riseIn{to{transform:translateY(0)}}
+.h-title .outline{color:transparent;-webkit-text-stroke:1.5px rgba(242,243,247,.55)}
+.h-title .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.h-sub{max-width:620px;margin-top:34px;color:var(--mut);font-size:clamp(15px,1.6vw,18px);line-height:1.75;font-weight:400}
+.h-sub b{color:var(--ink);font-weight:600}
+.h-sub .acid{color:var(--acid);font-weight:600}
+.install{margin-top:38px;display:inline-flex;align-self:flex-start;align-items:center;gap:0;max-width:100%;border:1px solid var(--line);border-radius:14px;
+  background:rgba(14,16,23,.85);backdrop-filter:blur(8px);overflow:hidden}
+.install .ps{font-family:var(--font-m);font-size:13.5px;padding:16px 22px;color:var(--ink);white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.install .ps::-webkit-scrollbar{display:none}
+.install .ps .dollar{color:var(--acid);margin-right:10px}
+.install .ps .pkg{color:var(--cyan)}
+.copy-btn{font-family:var(--font-m);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);
+  background:rgba(255,255,255,.04);border:none;border-left:1px solid var(--line);padding:0 22px;cursor:pointer;align-self:stretch;transition:.2s}
+.copy-btn:hover{color:var(--acid);background:rgba(212,255,79,.06)}
+.h-ctas{margin-top:26px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--font-m);font-size:13px;letter-spacing:.04em;padding:15px 30px;border-radius:12px;display:inline-flex;align-items:center;gap:10px;
+  cursor:pointer;transition:.28s;border:1px solid transparent}
+.btn-solid{background:var(--acid);color:#0a0c10;font-weight:700}
+.btn-solid:hover{transform:translateY(-2px);box-shadow:0 12px 38px -8px rgba(212,255,79,.45)}
+.btn-ghost{border-color:var(--line);color:var(--ink);background:rgba(255,255,255,.02)}
+.btn-ghost:hover{border-color:rgba(212,255,79,.5);color:var(--acid)}
+.h-stats{margin-top:auto;padding-top:64px;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
+.stat{background:var(--bg);padding:26px 20px 8px}
+.stat .n{font-family:var(--font-d);font-weight:700;font-size:clamp(26px,3.4vw,42px);letter-spacing:-.03em;color:var(--ink)}
+.stat .n em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat .l{font-family:var(--font-m);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:6px}
+@media(max-width:820px){.h-stats{grid-template-columns:repeat(2,1fr)}}
+/* ---------- terminal ---------- */
+.term-wrap{position:relative;z-index:3;padding:0 clamp(20px,4.5vw,64px)}
+.term{max-width:980px;margin:0 auto;border:1px solid var(--line);border-radius:18px;background:rgba(10,12,18,.9);backdrop-filter:blur(10px);
+  box-shadow:0 40px 120px -30px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.02) inset;overflow:hidden;transform:perspective(1400px) rotateX(3deg);transition:transform .6s}
+.term:hover{transform:perspective(1400px) rotateX(0)}
+.term-bar{display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+.term-bar i{width:11px;height:11px;border-radius:50%}
+.term-bar i:nth-child(1){background:#ff5f57}.term-bar i:nth-child(2){background:#febc2e}.term-bar i:nth-child(3){background:#28c840}
+.term-bar .t{font-family:var(--font-m);font-size:12px;color:var(--dim);margin-left:10px}
+.term-body{padding:24px 26px;font-family:var(--font-m);font-size:clamp(11.5px,1.35vw,13.5px);line-height:1.85;min-height:380px;white-space:pre-wrap;word-break:break-all}
+.t-p{color:var(--acid)}.t-c{color:var(--ink)}.t-dim{color:var(--dim)}.t-key{color:var(--violet)}.t-str{color:var(--cyan)}.t-ok{color:#4ade80}.t-com{color:var(--dim)}
+.t-caret{display:inline-block;width:8px;height:16px;background:var(--acid);vertical-align:-3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+/* ---------- marquee ---------- */
+.marq{margin-top:90px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;padding:20px 0;position:relative;z-index:3}
+.marq-track{display:flex;gap:56px;width:max-content;animation:marq 30s linear infinite;font-family:var(--font-d);font-weight:600;
+  font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+.marq-track b{color:var(--acid);font-weight:600}
+@keyframes marq{to{transform:translateX(-50%)}}
+</style>
+</head>
+<body>
+<div class="prog" id="prog"></div>
+<div class="mesh"></div><div class="gridlines"></div><div class="noise"></div>
+<div class="cur" id="cur"></div><div class="cur-dot" id="curDot"></div>
+
+<nav id="nav">
+  <a class="logo" href="#top"><span class="mark"><i></i></span>img<em>agent</em></a>
+  <div class="nav-links">
+    <a href="#pipeline">Pipeline</a><a href="#providers">Providers</a><a href="#agents">For agents</a>
+    <a href="#about">About</a><a href="#ecosystem">Ecosystem</a>
+  </div>
+  <a class="nav-cta" href="https://github.com/Bilal140202/imgagent" target="_blank" rel="noopener">★ GitHub</a>
+</nav>
+
+<header class="hero" id="top">
+  <div class="kicker"><span class="live"><i></i>v0.1 live on PyPI</span></div>
+  <h1 class="h-title">
+    <div class="row"><span>Images,</span></div>
+    <div class="row"><span class="outline">Acquired.</span></div>
+    <div class="row"><span class="grad">Verified.</span></div>
+  </h1>
+  <p class="h-sub"><b>imgagent</b> is the image acquisition agent for autonomous software. One command takes a query from
+    <span class="acid">search → rank → download → verify → manifest</span> and hands back bytes it has fully decoded,
+    hashed and rights-checked. <b>No browser. No LLM. No guesswork.</b> stdout is a JSON contract; the manifest is the deliverable.</p>
+  <div class="install" id="install">
+    <div class="ps"><span class="dollar">$</span>pip install <span class="pkg">imgagent</span></div>
+    <button class="copy-btn" data-copy="pip install imgagent">Copy</button>
+  </div>
+  <div class="h-ctas">
+    <a class="btn btn-solid" href="#pipeline">See it work ↓</a>
+    <a class="btn btn-ghost" href="https://pypi.org/project/imgagent/" target="_blank" rel="noopener">PyPI ↗</a>
+    <a class="btn btn-ghost" href="https://github.com/Bilal140202/imgagent/blob/main/AGENTS.md" target="_blank" rel="noopener">Agent manual ↗</a>
+  </div>
+  <div class="h-stats">
+    <div class="stat"><div class="n"><em data-count="7">0</em></div><div class="l">Pipeline stages</div></div>
+    <div class="stat"><div class="n"><span data-count="5">0</span>+</div><div class="l">Image sources</div></div>
+    <div class="stat"><div class="n"><em data-count="100">0</em>%</div><div class="l">Decoded before delivery</div></div>
+    <div class="stat"><div class="n"><span data-count="0">0</span></div><div class="l">Paid APIs required</div></div>
+  </div>
+</header>
+
+<section class="term-wrap">
+  <div class="term" data-tilt>
+    <div class="term-bar"><i></i><i></i><i></i><span class="t">agent@pipeline: ~/scene-04 — imgagent run</span></div>
+    <div class="term-body" id="term"></div>
+  </div>
+</section>
+
+<div class="marq">
+  <div class="marq-track" id="marq"></div>
+</div>
+<style>
+/* ---------- sections base ---------- */
+.sec{position:relative;z-index:3;padding:110px clamp(20px,4.5vw,64px)}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:64px;flex-wrap:wrap}
+.sec-tag{font-family:var(--font-m);font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.sec-tag::before{content:"";width:34px;height:1px;background:var(--acid)}
+.sec-tag b{color:var(--acid);font-weight:400}
+.sec-title{font-family:var(--font-d);font-weight:700;font-size:clamp(34px,5.4vw,72px);letter-spacing:-.04em;line-height:1.02;text-transform:uppercase}
+.sec-title .outline{color:transparent;-webkit-text-stroke:1.2px rgba(242,243,247,.5)}
+.sec-note{max-width:380px;color:var(--mut);font-size:14.5px;line-height:1.75}
+/* reveal */
+.rv{opacity:0;transform:translateY(36px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
+.rv.in{opacity:1;transform:none}
+/* ---------- pipeline ---------- */
+.pipe{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.step{background:var(--bg2);padding:30px 20px 26px;position:relative;transition:background .3s;min-height:190px;display:flex;flex-direction:column}
+.step:hover{background:var(--panel)}
+.step .idx{font-family:var(--font-m);font-size:11px;color:var(--dim);letter-spacing:.16em}
+.step .ic{font-size:22px;margin:16px 0 12px;filter:saturate(1.2)}
+.step .nm{font-family:var(--font-d);font-weight:600;font-size:16.5px;letter-spacing:-.01em;margin-bottom:8px}
+.step .ds{color:var(--mut);font-size:12.5px;line-height:1.65}
+.step::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:0;background:var(--grad);transition:width .5s cubic-bezier(.16,1,.3,1)}
+.step:hover::after{width:100%}
+@media(max-width:1080px){.pipe{grid-template-columns:repeat(3,1fr)}.step:nth-child(7){grid-column:span 3}}
+@media(max-width:680px){.pipe{grid-template-columns:1fr}.step:nth-child(7){grid-column:auto}}
+/* ---------- bento ---------- */
+.bento{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.cell{border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0)),var(--bg2);
+  padding:34px 30px;position:relative;overflow:hidden;transition:border-color .3s,transform .3s}
+.cell:hover{border-color:rgba(212,255,79,.35);transform:translateY(-3px)}
+.cell .cn{font-family:var(--font-m);font-size:11px;color:var(--dim);letter-spacing:.16em;position:absolute;top:26px;right:26px}
+.cell h3{font-family:var(--font-d);font-weight:600;font-size:21px;letter-spacing:-.02em;margin:14px 0 12px}
+.cell p{color:var(--mut);font-size:14px;line-height:1.75}
+.cell .big{font-family:var(--font-d);font-weight:700;font-size:clamp(40px,4.6vw,64px);letter-spacing:-.03em;line-height:1;
+  background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cell ul{list-style:none;margin-top:14px}
+.cell li{color:var(--mut);font-size:13px;line-height:1.9;padding-left:18px;position:relative}
+.cell li::before{content:"→";position:absolute;left:0;color:var(--acid);font-family:var(--font-m);font-size:12px}
+.cell .glyph{position:absolute;right:-28px;bottom:-30px;font-family:var(--font-d);font-weight:700;font-size:170px;line-height:1;
+  color:transparent;-webkit-text-stroke:1px rgba(255,255,255,.06);pointer-events:none;user-select:none}
+.c-wide{grid-column:span 7}.c-tall{grid-column:span 5}
+.c-third{grid-column:span 4}.c-half{grid-column:span 6}
+@media(max-width:980px){.c-wide,.c-tall,.c-third,.c-half{grid-column:span 12}}
+/* ---------- contract / code ---------- */
+.code-shell{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:rgba(10,12,18,.92)}
+.code-tabs{display:flex;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);overflow-x:auto}
+.code-tabs button{font-family:var(--font-m);font-size:12px;letter-spacing:.06em;color:var(--dim);background:none;border:none;
+  padding:15px 24px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.2s}
+.code-tabs button.on{color:var(--acid);border-bottom-color:var(--acid)}
+.code-panes pre{display:none;padding:28px 30px;font-family:var(--font-m);font-size:13px;line-height:1.8;color:var(--ink);overflow-x:auto}
+.code-panes pre.on{display:block}
+.code-panes .k{color:var(--violet)}.code-panes .s{color:var(--cyan)}.code-panes .g{color:var(--dim)}.code-panes .a{color:var(--acid)}.code-panes .o{color:#4ade80}
+/* ---------- providers ---------- */
+.prov{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.pcard{border:1px solid var(--line);border-radius:18px;padding:30px;background:var(--bg2);transition:.3s;position:relative;overflow:hidden}
+.pcard:hover{border-color:rgba(139,123,255,.45);background:var(--panel)}
+.pcard .ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.pcard .pn{font-family:var(--font-d);font-weight:600;font-size:19px;letter-spacing:-.01em}
+.pcard .badge{font-family:var(--font-m);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:5px 11px;border-radius:99px;border:1px solid}
+.badge.b-acid{color:var(--acid);border-color:rgba(212,255,79,.4);background:rgba(212,255,79,.07)}
+.badge.b-vio{color:var(--violet);border-color:rgba(139,123,255,.4);background:rgba(139,123,255,.07)}
+.badge.b-cyan{color:var(--cyan);border-color:rgba(95,212,255,.4);background:rgba(95,212,255,.07)}
+.badge.b-dim{color:var(--dim);border-color:var(--line)}
+.pcard p{color:var(--mut);font-size:13.5px;line-height:1.7;margin-bottom:16px}
+.pcard .meta{font-family:var(--font-m);font-size:11px;color:var(--dim);line-height:2;border-top:1px solid var(--line);padding-top:14px}
+.pcard .meta b{color:var(--mut);font-weight:500}
+@media(max-width:980px){.prov{grid-template-columns:1fr}}
+/* ---------- agents ---------- */
+.agents{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch}
+.agcard{border:1px solid var(--line);border-radius:18px;padding:38px 34px;background:linear-gradient(160deg,rgba(139,123,255,.06),transparent 55%),var(--bg2)}
+.agcard h3{font-family:var(--font-d);font-weight:600;font-size:23px;margin:18px 0 12px;letter-spacing:-.02em}
+.agcard p{color:var(--mut);font-size:14.5px;line-height:1.75}
+.agcard .mini{font-family:var(--font-m);font-size:11.5px;color:var(--acid);background:rgba(212,255,79,.07);border:1px solid rgba(212,255,79,.22);
+  display:inline-block;padding:7px 13px;border-radius:8px;margin-top:20px}
+.agcard pre{font-family:var(--font-m);font-size:12.5px;line-height:1.75;color:var(--ink);background:rgba(7,8,12,.85);border:1px solid var(--line);
+  border-radius:12px;padding:20px 22px;margin-top:20px;overflow-x:auto}
+.agcard pre .k{color:var(--violet)}.agcard pre .s{color:var(--cyan)}.agcard pre .g{color:var(--dim)}
+@media(max-width:980px){.agents{grid-template-columns:1fr}}
+</style>
+
+<!-- ================= PIPELINE ================= -->
+<section class="sec" id="pipeline">
+  <div class="sec-head">
+    <div class="rv">
+      <div class="sec-tag"><b>01</b> The pipeline</div>
+      <h2 class="sec-title">Seven gates.<br><span class="outline">Zero trust.</span></h2>
+    </div>
+    <p class="sec-note rv">Every stage is independently callable. Nothing advances on faith — a candidate becomes an asset only after the bytes decode, hash and pass the rights gate.</p>
+  </div>
+  <div class="pipe rv">
+    <div class="step"><div class="idx">01</div><div class="ic">🔍</div><div class="nm">Search</div><div class="ds">Multi-source discovery, each provider normalized to one schema.</div></div>
+    <div class="step"><div class="idx">02</div><div class="ic">🧬</div><div class="nm">Normalize</div><div class="ds">Every hit becomes an <b>imgagent.candidate/v1</b> object.</div></div>
+    <div class="step"><div class="idx">03</div><div class="ic">📊</div><div class="nm">Rank</div><div class="ds">Deterministic relevance + quality scoring. Same input, same order.</div></div>
+    <div class="step"><div class="idx">04</div><div class="ic">♻️</div><div class="nm">Dedupe</div><div class="ds">Perceptual + exact-hash dedupe before a single byte downloads.</div></div>
+    <div class="step"><div class="idx">05</div><div class="ic">⚡</div><div class="nm">Download</div><div class="ds">Streaming, atomic .part writes, backoff retries, byte caps.</div></div>
+    <div class="step"><div class="idx">06</div><div class="ic">🛡</div><div class="nm">Verify</div><div class="ds">Magic bytes + full decode + SHA-256. Extensions prove nothing.</div></div>
+    <div class="step"><div class="idx">07</div><div class="ic">📜</div><div class="nm">Manifest</div><div class="ds">Paths, hashes, provenance, rights — one JSON deliverable.</div></div>
+  </div>
+</section>
+
+<!-- ================= FEATURES BENTO ================= -->
+<section class="sec" style="padding-top:0">
+  <div class="sec-head">
+    <div class="rv">
+      <div class="sec-tag"><b>02</b> Why it holds up</div>
+      <h2 class="sec-title">Built for machines<br><span class="outline">that don't guess.</span></h2>
+    </div>
+  </div>
+  <div class="bento">
+    <div class="cell c-wide rv"><span class="cn">SEC / 01</span>
+      <div class="big">100%</div>
+      <h3>Verified bytes, or nothing</h3>
+      <p>A file is "downloaded" only after Pillow fully decodes it, the format matches its magic bytes, and the SHA-256 is recorded. HTML dressed as .jpg, corrupt files, bomb-sized payloads — rejected before they ever touch your assets.</p>
+      <ul><li>Streaming downloads with atomic .part → rename</li><li>MIME + full decode + per-format policy (JPEG/PNG/WebP/GIF, opt. AVIF)</li><li>Perceptual-hash dedupe across jobs</li></ul>
+      <div class="glyph">✓</div>
+    </div>
+    <div class="cell c-tall rv"><span class="cn">SEC / 02</span>
+      <h3>Hardened by default</h3>
+      <p>The network is hostile; imgagent treats it that way.</p>
+      <ul><li>SSRF guards: loopback, private, link-local, cloud-metadata ranges</li><li>DNS-rebinding re-checks on every redirect hop</li><li>TLS verification never disabled — no debug escape hatch</li><li>Path-traversal-proof writes; downloads never executed</li></ul>
+      <div class="glyph">🛡</div>
+    </div>
+    <div class="cell c-third rv"><span class="cn">SEC / 03</span>
+      <h3>Rights are data, not vibes</h3>
+      <p>License, creator and source page ride on every asset. <b>--require-reuse-rights</b> admits only verified public-domain / licensed material. Unknown never passes the gate — no matter the score.</p>
+      <div class="glyph">§</div>
+    </div>
+    <div class="cell c-third rv"><span class="cn">SEC / 04</span>
+      <h3>Idempotent to the core</h3>
+      <p>Kill it mid-run, rerun it tomorrow — stable candidate IDs, resumable jobs, verified files reused, SQLite state that survives restarts. Agents can retry without fear.</p>
+      <div class="glyph">∞</div>
+    </div>
+    <div class="cell c-third rv"><span class="cn">SEC / 05</span>
+      <h3>One JSON contract</h3>
+      <p>stdout = exactly one JSON object. stderr = diagnostics. Exit codes 0/1/2/3 mean exactly one thing each. Your parser is 3 lines and never breaks.</p>
+      <div class="glyph">{ }</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONTRACT ================= -->
+<section class="sec" style="padding-top:0">
+  <div class="sec-head">
+    <div class="rv">
+      <div class="sec-tag"><b>03</b> The contract</div>
+      <h2 class="sec-title">Read the payload.<br><span class="outline">Ship the manifest.</span></h2>
+    </div>
+    <p class="sec-note rv">Three views of the same system: what the CLI prints, what the manifest carries, and how your code calls it as a library.</p>
+  </div>
+  <div class="code-shell rv">
+    <div class="code-tabs">
+      <button class="on" data-pane="p1">stdout · result/v1</button>
+      <button data-pane="p2">manifest · manifest/v1</button>
+      <button data-pane="p3">python api</button>
+      <button data-pane="p4">mcp config</button>
+    </div>
+    <div class="code-panes">
+<pre class="on" id="p1"><span class="g">// imgagent run "isdal woman norway 1970" --require-reuse-rights --top 2 --json</span>
+{
+  <span class="k">"ok"</span>: <span class="o">true</span>,
+  <span class="k">"schema"</span>: <span class="s">"imgagent.result/v1"</span>,
+  <span class="k">"command"</span>: <span class="s">"run"</span>,
+  <span class="k">"data"</span>: {
+    <span class="k">"job_id"</span>: <span class="s">"j-3f9c81a2"</span>,
+    <span class="k">"downloads"</span>: { <span class="k">"saved"</span>: <span class="a">2</span>, <span class="k">"failed"</span>: <span class="a">0</span>, <span class="k">"duplicate"</span>: <span class="a">0</span> },
+    <span class="k">"manifest_path"</span>: <span class="s">"/work/.imgagent/manifests/j-3f9c81a2.json"</span>,
+    <span class="k">"partial"</span>: <span class="o">false</span>, <span class="k">"errors"</span>: []
+  }
+}</pre>
+<pre id="p2">{
+  <span class="k">"schema_version"</span>: <span class="s">"imgagent.manifest/v1"</span>,
+  <span class="k">"assets"</span>: [{
+    <span class="k">"asset_id"</span>: <span class="s">"asset-586f22ac8bf2"</span>,
+    <span class="k">"project"</span>: <span class="s">"isdal"</span>, <span class="k">"scene"</span>: <span class="s">"scene-04"</span>,
+    <span class="k">"file"</span>: { <span class="k">"path"</span>: <span class="s">"…/originals/isdalen--9ac9f850.jpg"</span>,
+              <span class="k">"sha256"</span>: <span class="s">"586f…"</span>, <span class="k">"width"</span>: <span class="a">3264</span>, <span class="k">"height"</span>: <span class="a">2448</span> },
+    <span class="k">"provenance"</span>: { <span class="k">"provider"</span>: <span class="s">"wikimedia"</span>,
+                    <span class="k">"source_page_url"</span>: <span class="s">"https://commons.wikimedia.org/…"</span>,
+                    <span class="k">"creator"</span>: <span class="s">"…" </span>, <span class="k">"license_name"</span>: <span class="s">"Public domain"</span> },
+    <span class="k">"rights_status"</span>: <span class="s">"verified_public_domain"</span>
+  }]
+}</pre>
+<pre id="p3"><span class="k">from</span> imgagent <span class="k">import</span> run_image_job, get_manifest
+
+result = <span class="a">run_image_job</span>(
+    <span class="s">"Isdal Woman Norway 1970"</span>,
+    top=<span class="a">8</span>, require_reuse_rights=<span class="o">True</span>,
+    project=<span class="s">"isdal"</span>, scene=<span class="s">"scene-04"</span>,
+)
+manifest = <span class="a">get_manifest</span>(result.job_id)
+<span class="g"># same engine as the CLI — one implementation, one contract</span></pre>
+<pre id="p4"><span class="g">// claude_desktop_config.json — or any MCP client</span>
+{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"imgagent"</span>: {
+      <span class="k">"command"</span>: <span class="s">"imgagent-mcp"</span>,
+      <span class="k">"args"</span>: [],
+      <span class="k">"env"</span>: { <span class="k">"IMGAGENT_WORKSPACE"</span>: <span class="s">"/abs/path/.imgagent"</span> }
+    }
+  }
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PROVIDERS ================= -->
+<section class="sec" id="providers" style="padding-top:0">
+  <div class="sec-head">
+    <div class="rv">
+      <div class="sec-tag"><b>04</b> Providers</div>
+      <h2 class="sec-title">Plugged into<br><span class="outline">the open web.</span></h2>
+    </div>
+    <p class="sec-note rv">Honest support matrix — every provider documents auth, rate limits and test date. If a source is down, it shows up in <b>errors[]</b>; the rest keep working.</p>
+  </div>
+  <div class="prov">
+    <div class="pcard rv"><div class="ph"><div class="pn">Wikimedia Commons</div><span class="badge b-acid">Primary</span></div>
+      <p>Official MediaWiki API. Original-resolution files plus full license metadata — the backbone of rights-cleared workflows.</p>
+      <div class="meta"><b>auth</b> none · <b>rights</b> verified<br><b>formats</b> jpeg · png · webp · gif · tif</div></div>
+    <div class="pcard rv"><div class="ph"><div class="pn">Openverse</div><span class="badge b-acid">Licensed</span></div>
+      <p>CC-licensed index across millions of works. License and creator come with the result, not as a chase.</p>
+      <div class="meta"><b>auth</b> optional key · <b>rights</b> verified<br><b>formats</b> jpeg · png · gif</div></div>
+    <div class="pcard rv"><div class="ph"><div class="pn">DuckDuckGo Images</div><span class="badge b-vio">Discovery</span></div>
+      <p>Broad web discovery when coverage matters more than metadata. Rights stay <i>unknown</i> — by design, not by accident.</p>
+      <div class="meta"><b>auth</b> none · <b>rights</b> unknown<br><b>best for</b> exploration, reference</div></div>
+    <div class="pcard rv"><div class="ph"><div class="pn">Generic extractor</div><span class="badge b-cyan">Any URL</span></div>
+      <p>Point <b>inspect</b> at any page or image URL: OG-image extraction, magic-byte sniffing, dimensions — no integration required.</p>
+      <div class="meta"><b>auth</b> n/a · <b>use</b> one-off probes<br><b>download</b> explicit, verified</div></div>
+    <div class="pcard rv"><div class="ph"><div class="pn">Custom JSON APIs</div><span class="badge b-vio">Your keys</span></div>
+      <p>Config-driven provider: declare an endpoint + field map in config.toml and your licensed archive behaves like a built-in.</p>
+      <div class="meta"><b>auth</b> env var keys<br><b>pipeline</b> same verify + manifest</div></div>
+    <div class="pcard rv"><div class="ph"><div class="pn">More coming</div><span class="badge b-dim">Roadmap</span></div>
+      <p>Google Images discovery and Pinterest reference inspection are on the roadmap behind the same candidate schema.</p>
+      <div class="meta"><b>status</b> not yet shipped<br><b>policy</b> shipped = tested = documented</div></div>
+  </div>
+</section>
+
+<!-- ================= FOR AGENTS ================= -->
+<section class="sec" id="agents" style="padding-top:0">
+  <div class="sec-head">
+    <div class="rv">
+      <div class="sec-tag"><b>05</b> For agents</div>
+      <h2 class="sec-title">Drop it into<br><span class="outline">your agent stack.</span></h2>
+    </div>
+  </div>
+  <div class="agents">
+    <div class="agcard rv">
+      <span class="mini">CONTRACT · RUNTIME</span>
+      <h3>Self-describing on purpose</h3>
+      <p>Any agent can load the full operating manual straight from the binary — golden rules, command map, failure taxonomy, anti-patterns. No docs archaeology, no guessing flags.</p>
+      <pre><span class="g">$</span> imgagent agent-instructions
+<span class="g"># complete machine contract on stdout —</span>
+<span class="g"># safe to paste into any system prompt</span></pre>
+      <a class="btn btn-ghost" style="margin-top:22px" href="https://github.com/Bilal140202/imgagent/blob/main/AGENTS.md" target="_blank" rel="noopener">Read AGENTS.md ↗</a>
+    </div>
+    <div class="agcard rv">
+      <span class="mini">MCP · TOOLS</span>
+      <h3>Native tool server</h3>
+      <p>The same engine exposed over Model Context Protocol. Claude Desktop, Cursor, or your own MCP client — tools mirror the CLI one-to-one, schemas and all.</p>
+      <pre>pip install <span class="s">"imgagent[mcp]"</span>
+
+{ <span class="k">"mcpServers"</span>: { <span class="k">"imgagent"</span>: {
+    <span class="k">"command"</span>: <span class="s">"imgagent-mcp"</span> } } }</pre>
+      <a class="btn btn-ghost" style="margin-top:22px" href="https://github.com/Bilal140202/imgagent/tree/main/docs" target="_blank" rel="noopener">Full docs ↗</a>
+    </div>
+  </div>
+</section>
+<style>
+/* ---------- about ---------- */
+.about{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:linear-gradient(120deg,rgba(212,255,79,.05),transparent 40%,rgba(139,123,255,.06))}
+.about-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:60px;align-items:center}
+.about-kicker{font-family:var(--font-m);font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--acid);margin-bottom:22px}
+.about-title{font-family:var(--font-d);font-weight:700;font-size:clamp(30px,4.4vw,56px);letter-spacing:-.035em;line-height:1.05}
+.about-title .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.about-txt{color:var(--mut);font-size:15.5px;line-height:1.85;margin-top:24px;max-width:520px}
+.about-txt b{color:var(--ink)}
+.about-links{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
+.chip{font-family:var(--font-m);font-size:12.5px;padding:11px 20px;border:1px solid var(--line);border-radius:99px;color:var(--ink);
+  display:inline-flex;align-items:center;gap:9px;transition:.25s;background:rgba(255,255,255,.02)}
+.chip:hover{border-color:var(--acid);color:var(--acid);transform:translateY(-2px)}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--grad)}
+.about-card{border:1px solid var(--line);border-radius:20px;padding:40px 36px;background:rgba(10,12,18,.65);backdrop-filter:blur(8px);position:relative;overflow:hidden}
+.about-card::before{content:"";position:absolute;top:-60px;right:-60px;width:180px;height:180px;border-radius:50%;
+  background:radial-gradient(circle,rgba(212,255,79,.12),transparent 70%)}
+.about-card .handle{font-family:var(--font-d);font-weight:700;font-size:26px;letter-spacing:-.02em}
+.about-card .role{font-family:var(--font-m);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin:8px 0 22px}
+.about-card .facts{border-top:1px solid var(--line)}
+.about-card .fact{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid var(--line);font-size:13px}
+.about-card .fact span:first-child{color:var(--dim);font-family:var(--font-m);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.about-card .fact a{color:var(--ink);border-bottom:1px solid rgba(212,255,79,.35);transition:.2s}
+.about-card .fact a:hover{color:var(--acid)}
+@media(max-width:980px){.about-grid{grid-template-columns:1fr}}
+/* ---------- ecosystem ---------- */
+.eco{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.ecard{border:1px solid var(--line);border-radius:18px;padding:30px;background:var(--bg2);display:flex;flex-direction:column;gap:12px;transition:.3s;position:relative;overflow:hidden;min-height:210px}
+.ecard:hover{transform:translateY(-4px);border-color:rgba(212,255,79,.4)}
+.ecard .eh{display:flex;align-items:center;justify-content:space-between}
+.ecard .en{font-family:var(--font-d);font-weight:600;font-size:19px;letter-spacing:-.01em}
+.ecard .arrow{color:var(--dim);font-size:18px;transition:.25s}
+.ecard:hover .arrow{color:var(--acid);transform:translate(3px,-3px)}
+.ecard p{color:var(--mut);font-size:13.5px;line-height:1.7;flex:1}
+.ecard .tags{display:flex;gap:8px;flex-wrap:wrap}
+.ecard .tag{font-family:var(--font-m);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
+  border:1px solid var(--line);border-radius:99px;padding:4px 11px}
+.ecard .tag.hot{color:var(--acid);border-color:rgba(212,255,79,.35)}
+.ecard .tag.sib{color:var(--violet);border-color:rgba(139,123,255,.35)}
+.ecard.featured{background:linear-gradient(150deg,rgba(212,255,79,.08),transparent 45%),var(--bg2);border-color:rgba(212,255,79,.3)}
+@media(max-width:980px){.eco{grid-template-columns:1fr}}
+/* ---------- footer ---------- */
+footer{position:relative;z-index:3;border-top:1px solid var(--line);padding:70px clamp(20px,4.5vw,64px) 40px;background:var(--bg)}
+.f-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;margin-bottom:60px}
+.f-brand .logo{font-size:24px}
+.f-brand p{color:var(--dim);font-size:13.5px;line-height:1.8;margin-top:16px;max-width:340px}
+.f-cols{display:flex;gap:clamp(30px,6vw,90px);flex-wrap:wrap}
+.f-col .fh{font-family:var(--font-m);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:18px}
+.f-col a{display:block;color:var(--mut);font-size:13.5px;padding:5px 0;transition:color .2s}
+.f-col a:hover{color:var(--acid)}
+.f-bottom{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:26px;
+  font-family:var(--font-m);font-size:11.5px;color:var(--dim);letter-spacing:.04em}
+.f-bottom .heart{color:var(--acid)}
+/* ---------- back-to-top ---------- */
+.top-btn{position:fixed;right:26px;bottom:26px;z-index:120;width:48px;height:48px;border-radius:14px;border:1px solid var(--line);
+  background:rgba(14,16,23,.9);backdrop-filter:blur(8px);color:var(--acid);font-size:18px;cursor:pointer;opacity:0;pointer-events:none;transition:.3s}
+.top-btn.on{opacity:1;pointer-events:auto}
+.top-btn:hover{border-color:var(--acid);transform:translateY(-3px)}
+</style>
+
+<!-- ================= ABOUT ================= -->
+<section class="sec about" id="about">
+  <div class="about-grid">
+    <div class="rv">
+      <div class="about-kicker">06 — Who's behind this</div>
+      <h2 class="about-title">Built by the <span class="grad">Ansari Bilal</span> team.</h2>
+      <p class="about-txt">imgagent is part of a family of headless, contract-first agents built for real production pipelines —
+        the same doctrine that runs through <b>ytagent</b>, <b>ttagent</b> and <b>igagent</b>: one input, one JSON contract,
+        verified bytes, honest negatives. Full story, other projects and contact live on the main site.</p>
+      <div class="about-links">
+        <a class="chip" href="https://ansaribilal.com" target="_blank" rel="noopener"><span class="dot"></span>ansaribilal.com ↗</a>
+        <a class="chip" href="https://github.com/Bilal140202" target="_blank" rel="noopener">github / Bilal140202 ↗</a>
+        <a class="chip" href="https://github.com/ansaribilal14" target="_blank" rel="noopener">github / ansaribilal14 ↗</a>
+      </div>
+    </div>
+    <div class="about-card rv">
+      <div class="handle">Ansari Bilal</div>
+      <div class="role">Author & Owner — imgagent</div>
+      <div class="facts">
+        <div class="fact"><span>Main site</span><a href="https://ansaribilal.com" target="_blank" rel="noopener">ansaribilal.com</a></div>
+        <div class="fact"><span>PyPI</span><a href="https://pypi.org/project/imgagent/" target="_blank" rel="noopener">pypi/imgagent</a></div>
+        <div class="fact"><span>GitHub</span><a href="https://github.com/Bilal140202/imgagent" target="_blank" rel="noopener">Bilal140202/imgagent</a></div>
+        <div class="fact"><span>License</span><span style="color:var(--acid)">MIT — free to build on</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ECOSYSTEM ================= -->
+<section class="sec" id="ecosystem">
+  <div class="sec-head">
+    <div class="rv">
+      <div class="sec-tag"><b>07</b> The ecosystem</div>
+      <h2 class="sec-title">One doctrine.<br><span class="outline">Many agents.</span></h2>
+    </div>
+    <p class="sec-note rv">imgagent doesn't ship alone. Sibling agents cover video, search and media farms — all contract-first, all built to run unattended.</p>
+  </div>
+  <div class="eco">
+    <a class="ecard featured rv" href="https://pypi.org/project/imgagent/" target="_blank" rel="noopener">
+      <div class="eh"><div class="en">imgagent</div><span class="arrow">↗</span></div>
+      <p>You're here. Image discovery → verified assets → manifest. The acquisition layer of the stack.</p>
+      <div class="tags"><span class="tag hot">this project</span><span class="tag">pypi</span><span class="tag">mcp</span></div>
+    </a>
+    <a class="ecard rv" href="https://github.com/Bilal140202/ytagent" target="_blank" rel="noopener">
+      <div class="eh"><div class="en">ytagent</div><span class="arrow">↗</span></div>
+      <p>YouTube acquisition agent with the same one-JSON contract — metadata, media, verification.</p>
+      <div class="tags"><span class="tag sib">sibling</span><span class="tag">video</span><span class="tag">agent</span></div>
+    </a>
+    <a class="ecard rv" href="https://github.com/Bilal140202/ttagent" target="_blank" rel="noopener">
+      <div class="eh"><div class="en">ttagent</div><span class="arrow">↗</span></div>
+      <p>TikTok-side sibling agent: URL normalization, slot decoding, atomic downloads.</p>
+      <div class="tags"><span class="tag sib">sibling</span><span class="tag">video</span><span class="tag">agent</span></div>
+    </a>
+    <a class="ecard rv" href="https://github.com/Bilal140202/igagent" target="_blank" rel="noopener">
+      <div class="eh"><div class="en">igagent</div><span class="arrow">↗</span></div>
+      <p>Instagram media agent — source tracing and verified downloads under the same doctrine.</p>
+      <div class="tags"><span class="tag sib">sibling</span><span class="tag">media</span><span class="tag">agent</span></div>
+    </a>
+    <a class="ecard rv" href="https://github.com/ansaribilal14/yt-farm" target="_blank" rel="noopener">
+      <div class="eh"><div class="en">yt-farm</div><span class="arrow">↗</span></div>
+      <p>Remote worker / task execution farm with handoff patterns — where the agents run at scale.</p>
+      <div class="tags"><span class="tag sib">infra</span><span class="tag">workers</span><span class="tag">orchestration</span></div>
+    </a>
+    <a class="ecard rv" href="https://github.com/superz1402/opuscar-studio" target="_blank" rel="noopener">
+      <div class="eh"><div class="en">Opuscar Studio</div><span class="arrow">↗</span></div>
+      <p>The flagship consumer: asset inventory and video rendering that eats imgagent manifests directly.</p>
+      <div class="tags"><span class="tag">consumer</span><span class="tag">render</span><span class="tag">studio</span></div>
+    </a>
+    <a class="ecard rv" href="https://github.com/lemomo-ai/lemo-opuscar" target="_blank" rel="noopener">
+      <div class="eh"><div class="en">lemo-opuscar</div><span class="arrow">↗</span></div>
+      <p>Companion Opuscar build — asset pipelines and rendering integration in the same universe.</p>
+      <div class="tags"><span class="tag">consumer</span><span class="tag">pipeline</span></div>
+    </a>
+    <a class="ecard rv" href="https://ansaribilal.com" target="_blank" rel="noopener">
+      <div class="eh"><div class="en">ansaribilal.com</div><span class="arrow">↗</span></div>
+      <p>Home base — the maker's site with everything else: projects, writing, contact.</p>
+      <div class="tags"><span class="tag hot">start here</span><span class="tag">portfolio</span></div>
+    </a>
+  </div>
+</section>
+
+<!-- ================= FINAL CTA + FOOTER ================= -->
+<footer>
+  <div class="f-top">
+    <div class="f-brand">
+      <a class="logo" href="#top"><span class="mark"><i></i></span>img<em>agent</em></a>
+      <p>The image acquisition agent. Search, verify, manifest — one command, zero guesswork. Free forever under MIT.</p>
+    </div>
+    <div class="f-cols">
+      <div class="f-col"><div class="fh">Product</div>
+        <a href="#pipeline">Pipeline</a><a href="#providers">Providers</a><a href="#agents">For agents</a>
+        <a href="https://pypi.org/project/imgagent/" target="_blank" rel="noopener">PyPI ↗</a></div>
+      <div class="f-col"><div class="fh">Docs</div>
+        <a href="https://github.com/Bilal140202/imgagent/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a>
+        <a href="https://github.com/Bilal140202/imgagent/blob/main/docs/CLI_REFERENCE.md" target="_blank" rel="noopener">CLI reference</a>
+        <a href="https://github.com/Bilal140202/imgagent/blob/main/docs/API_REFERENCE.md" target="_blank" rel="noopener">API reference</a>
+        <a href="https://github.com/Bilal140202/imgagent/blob/main/docs/SECURITY.md" target="_blank" rel="noopener">Security</a></div>
+      <div class="f-col"><div class="fh">People</div>
+        <a href="https://ansaribilal.com" target="_blank" rel="noopener">ansaribilal.com</a>
+        <a href="https://github.com/Bilal140202" target="_blank" rel="noopener">Bilal140202</a>
+        <a href="https://github.com/ansaribilal14" target="_blank" rel="noopener">ansaribilal14</a>
+        <a href="https://github.com/superz1402" target="_blank" rel="noopener">superz1402</a></div>
+    </div>
+  </div>
+  <div class="f-bottom">
+    <span>© 2026 imgagent authors — MIT License</span>
+    <span>verified bytes <span class="heart">●</span> honest negatives</span>
+  </div>
+</footer>
+<button class="top-btn" id="topBtn" aria-label="Back to top">↑</button>
+
+<script>
+/* ---------- custom cursor ---------- */
+const cur=document.getElementById('cur'),dot=document.getElementById('curDot');
+let cx=-100,cy=-100,tx=-100,ty=-100;
+addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY;dot.style.left=tx+'px';dot.style.top=ty+'px';});
+(function loop(){cx+=(tx-cx)*.16;cy+=(ty-cy)*.16;cur.style.left=cx+'px';cur.style.top=cy+'px';requestAnimationFrame(loop)})();
+document.querySelectorAll('a,button,.step,.cell,.pcard,.ecard').forEach(el=>{
+  el.addEventListener('mouseenter',()=>cur.classList.add('on'));
+  el.addEventListener('mouseleave',()=>cur.classList.remove('on'));
+});
+/* ---------- progress + nav + top ---------- */
+const prog=document.getElementById('prog'),nav=document.getElementById('nav'),topBtn=document.getElementById('topBtn');
+addEventListener('scroll',()=>{
+  const h=document.documentElement,sc=h.scrollTop/(h.scrollHeight-h.clientHeight);
+  prog.style.width=(sc*100)+'%';
+  nav.classList.toggle('scrolled',h.scrollTop>40);
+  topBtn.classList.toggle('on',h.scrollTop>700);
+},{passive:true});
+topBtn.onclick=()=>scrollTo({top:0,behavior:'smooth'});
+/* ---------- reveal on scroll ---------- */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+/* ---------- counters ---------- */
+const cio=new IntersectionObserver(es=>es.forEach(e=>{
+  if(!e.isIntersecting)return;cio.unobserve(e.target);
+  const el=e.target,end=+el.dataset.count,t0=performance.now(),dur=1400;
+  (function tick(t){const p=Math.min((t-t0)/dur,1),ease=1-Math.pow(1-p,4);
+    el.textContent=Math.round(end*ease);if(p<1)requestAnimationFrame(tick)})(t0);
+}),{threshold:.4});
+document.querySelectorAll('[data-count]').forEach(el=>cio.observe(el));
+/* ---------- marquee ---------- */
+const items=['Search','Normalize','Rank','Dedupe','Download','Verify','Manifest','Verified Bytes','Honest Negatives','One JSON Contract'];
+document.getElementById('marq').innerHTML=(t=>t+t)(items.map(i=>`<span>${i}</span><b>✦</b>`).join(''));
+/* ---------- typing terminal ---------- */
+const term=document.getElementById('term');
+const SCENE=[
+ {c:'t-com',t:'# scene-04 needs 3 rights-cleared historical photos\n'},
+ {c:'t-p',t:'$ '},{c:'t-c',t:'imgagent run "Isdal Woman Norway 1970" \\\n    --require-reuse-rights --top 3 --json\n\n'},
+ {c:'t-dim',t:'⠋ searching  wikimedia ✓  openverse ✓  duckduckgo ✓\n\n'},
+ {c:'t-c',t:'{\n  '},{c:'t-key',t:'"ok"'},{c:'t-c',t:': '},{c:'t-ok',t:'true'},{c:'t-c',t:',\n  '},
+ {c:'t-key',t:'"data"'},{c:'t-c',t:': {\n    '},{c:'t-key',t:'"job_id"'},{c:'t-c',t:': '},{c:'t-str',t:'"j-3f9c81a2"'},{c:'t-c',t:',\n    '},
+ {c:'t-key',t:'"downloads"'},{c:'t-c',t:': { '},{c:'t-key',t:'"saved"'},{c:'t-c',t:': '},{c:'t-ok',t:'3'},{c:'t-c',t:', '},
+ {c:'t-key',t:'"failed"'},{c:'t-c',t:': '},{c:'t-ok',t:'0'},{c:'t-c',t:' },\n    '},
+ {c:'t-key',t:'"manifest_path"'},{c:'t-c',t:': '},{c:'t-str',t:'".imgagent/manifests/j-3f9c81a2.json"'},{c:'t-c',t:',\n'},
+ {c:'t-c',t:'    '},{c:'t-key',t:'"partial"'},{c:'t-c',t:': '},{c:'t-ok',t:'false'},{c:'t-c',t:', '},{c:'t-key',t:'"errors"'},{c:'t-c',t:': []\n  }\n}\n\n'},
+ {c:'t-ok',t:'✓ 3/3 verified  ·  sha256 recorded  ·  rights: verified_public_domain\n'},
+ {c:'t-dim',t:'  → manifest handed to renderer. agents never touch unverified bytes.\n\n'},
+ {c:'t-p',t:'$ '},{c:'t-caret',t:'<span class="t-caret"></span>'}
+];
+let tStart=null,typeSpeed=14;
+function typeLine(ts){
+  const w=ts.reduce((a,l)=>a+l.t.length,0);
+  const span=performance.now()-tStart;
+  const chars=Math.floor(span/typeSpeed);
+  if(chars>=w){term.innerHTML=ts.map(l=>`<span class="${l.c}">${l.t}</span>`).join('');return}
+  let acc=0,out='';
+  for(const l of ts){
+    const take=Math.max(0,Math.min(l.t.length,chars-acc));
+    out+=`<span class="${l.c}">${l.t.slice(0,take)}</span>`;acc+=l.t.length;
+    if(acc>=chars)break;
+  }
+  term.innerHTML=out;
+  requestAnimationFrame(()=>typeLine(ts));
+}
+const tio=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){tio.unobserve(term);tStart=performance.now();requestAnimationFrame(()=>typeLine(SCENE))}
+}),{threshold:.3});
+tio.observe(term);
+/* ---------- code tabs ---------- */
+document.querySelectorAll('.code-tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.code-tabs button').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.code-panes pre').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');document.getElementById(b.dataset.pane).classList.add('on');
+});
+/* ---------- copy ---------- */
+document.querySelectorAll('.copy-btn').forEach(b=>b.onclick=async()=>{
+  try{await navigator.clipboard.writeText(b.dataset.copy)}catch(e){
+    const ta=document.createElement('textarea');ta.value=b.dataset.copy;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}
+  const old=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=old,1400);
+});
+/* ---------- tilt ---------- */
+document.querySelectorAll('[data-tilt]').forEach(el=>{
+  el.addEventListener('mousemove',e=>{
+    const r=el.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+    el.style.transform=`perspective(1400px) rotateX(${3-y*4}deg) rotateY(${x*3}deg)`;
+  });
+  el.addEventListener('mouseleave',()=>el.style.transform='perspective(1400px) rotateX(3deg)');
+});
+</script>
+
+</body>
+</html>

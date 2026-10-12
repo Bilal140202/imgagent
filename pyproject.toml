@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "imgagent"
-version = "0.1.0"
+version = "0.1.1"
 description = "Universal image discovery, search, listing, download and asset agent — standalone, headless, deterministic, machine-friendly."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -56,10 +56,12 @@ imgagent = "imgagent.cli:main"
 imgagent-mcp = "imgagent.mcp_server:main"
 
 [project.urls]
-Homepage = "https://github.com/superz1402/imgagent"
-Repository = "https://github.com/superz1402/imgagent"
-Issues = "https://github.com/superz1402/imgagent/issues"
-Documentation = "https://github.com/superz1402/imgagent/tree/main/docs"
+Homepage = "https://github.com/Bilal140202/imgagent"
+Repository = "https://github.com/Bilal140202/imgagent"
+Issues = "https://github.com/Bilal140202/imgagent/issues"
+Documentation = "https://github.com/Bilal140202/imgagent/tree/main/docs"
+Agent = "https://github.com/Bilal140202/imgagent/blob/main/AGENTS.md"
+Landing = "https://superz1402.github.io/imgagent-site/"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/imgagent"]

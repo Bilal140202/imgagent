@@ -2,15 +2,23 @@
 
 **Universal image discovery, search, listing, download and asset agent — standalone, headless, deterministic, machine-friendly.**
 
-[![CI](https://github.com/superz1402/imgagent/actions/workflows/ci.yml/badge.svg)](https://github.com/superz1402/imgagent/actions/workflows/ci.yml)
+[![CI](https://github.com/Bilal140202/imgagent/actions/workflows/ci.yml/badge.svg)](https://github.com/Bilal140202/imgagent/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/imgagent?color=%23d4ff4f&label=PyPI)](https://pypi.org/project/imgagent/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Landing](https://img.shields.io/badge/landing-imgagent--site-8b7bff)](https://superz1402.github.io/imgagent-site/)
+
+🌐 **[Landing page](https://superz1402.github.io/imgagent-site/)** · 📦 **[PyPI](https://pypi.org/project/imgagent/)** · 🤖 **[Agent manual (AGENTS.md)](AGENTS.md)** · 👤 **[ansaribilal.com](https://ansaribilal.com)**
 
 `imgagent` is a production-grade, installable image acquisition agent for AI agents and humans:
 one command takes a query from **search → normalize → rank → dedupe → download → validate →
 manifest → verified local paths**. Every stage is also independently callable. It runs fully
 deterministic without any LLM, works headless on Linux / macOS / Windows / Termux / containers /
 CI, and needs no paid API for its default public-source workflow.
+
+```bash
+pip install imgagent            # live on PyPI
+```
 
 Sibling doctrine of [ytagent](https://github.com/Bilal140202/ytagent),
 [ttagent](https://github.com/Bilal140202/ttagent) and
@@ -22,8 +30,10 @@ honest negatives.
 ## Quickstart
 
 ```bash
-# From a clone
-pip install .                # or pipx install . once published to PyPI
+# From PyPI (published)
+pip install imgagent
+# or from a clone
+pip install .
 
 # One command: discover, rank, download the top 5, write the manifest
 imgagent run "Isdal Woman Norway 1970 historical photographs" \
@@ -45,8 +55,6 @@ imgagent inspect "https://commons.wikimedia.org/wiki/File:Isdal_Woman.jpg"
 imgagent agent-instructions
 ```
 
-> `pipx install imgagent` will work once the package is published on PyPI — until then install
-> from a clone. Do not trust any install instructions that point at a non-existent release.
 
 ## One-command workflow
 

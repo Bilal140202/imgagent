@@ -1,0 +1,29 @@
+# imgagent
+> The image acquisition agent for AI agents and pipelines: search → normalize → rank → dedupe → download → verify → manifest. One command, one JSON contract, verified bytes. MIT licensed, runs headless, no paid APIs required.
+
+The image acquisition agent for autonomous software. Discovers, ranks, downloads and verifies images from public sources (Wikimedia Commons, Openverse, DuckDuckGo, any URL, custom JSON APIs) and delivers a machine-readable manifest with SHA-256 hashes, dimensions, provenance and rights status. Deterministic, idempotent, security-hardened. Install: `pip install imgagent`. PyPI: https://pypi.org/project/imgagent/
+
+## Docs
+- [AGENTS.md — complete operating manual for AI agents](https://github.com/Bilal140202/imgagent/blob/main/AGENTS.md): golden rules, command map, failure taxonomy, anti-patterns. Also at runtime: `imgagent agent-instructions`.
+- [CLI reference](https://github.com/Bilal140202/imgagent/blob/main/docs/CLI_REFERENCE.md): every command, flag, exit code.
+- [API reference](https://github.com/Bilal140202/imgagent/blob/main/docs/API_REFERENCE.md): programmatic surface (search_images, run_image_job, get_manifest, …).
+- [Provider matrix](https://github.com/Bilal140202/imgagent/blob/main/docs/PROVIDERS.md): supported sources, auth, rate limits, tested dates.
+- [Integration guide](https://github.com/Bilal140202/imgagent/blob/main/docs/INTEGRATION.md): manifest contract for renderers (Opuscar) and pipelines.
+- [Security model](https://github.com/Bilal140202/imgagent/blob/main/docs/SECURITY.md): SSRF guards, redirect validation, verification pipeline.
+- [Cookbook](https://github.com/Bilal140202/imgagent/blob/main/docs/COOKBOOK.md): copy-runnable agent recipes (scene fill, batch, CI).
+- [Source repository](https://github.com/Bilal140202/imgagent)
+- [Landing page](https://superz1402.github.io/imgagent-site/)
+
+## Example: one-command rights-cleared acquisition
+```bash
+imgagent run "Isdal Woman Norway 1970" --require-reuse-rights --top 8 \
+  --project isdal --scene scene-04 --out ./assets --json
+```
+stdout: exactly one JSON object (`imgagent.result/v1`); deliverable: `manifest_path` → `imgagent.manifest/v1` with verified local paths, sha256, provenance, rights_status. Exit codes: 0 success/partial, 1 no results, 2 bad usage, 3 config problem.
+
+## Authors & owners
+- Bilal140202 (owner) — https://github.com/Bilal140202
+- ansaribilal14 — https://github.com/ansaribilal14
+- hamza140202 — https://github.com/hamza140202
+- superz1402 — https://github.com/superz1402
+- Maker site: https://ansaribilal.com

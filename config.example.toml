@@ -17,6 +17,15 @@ api_url = "https://api.openverse.org/v1/images"
 [sources.duckduckgo]
 # Unofficial, best-effort. Failures are graceful and explicit.
 
+# [sources.pinterest]
+# Opt-in best-effort Pinterest pin search (NOT in the default enabled set).
+# Pass --sources pinterest or add it to sources.enabled. Keyless, anonymous,
+# unofficial: Pinterest gates results by IP reputation (datacenter IPs often
+# get 403 / an empty app shell — reported honestly as structured errors).
+# rights_status stays "unknown" for every candidate, always.
+# base_url = "https://www.pinterest.com"   # or a regional domain, e.g. pinterest.de
+# page_size = 25                           # hard-capped at 25
+
 # --- Config-driven official APIs -------------------------------------------
 # Declare any official API that returns JSON. ${VAR} in values expands from
 # the environment; {query}/{limit}/{offset} are request placeholders.

@@ -15,12 +15,14 @@ from imgagent.sources.custom import CustomApiSource
 from imgagent.sources.duckduckgo import DuckDuckGoSource
 from imgagent.sources.generic import GenericSource
 from imgagent.sources.openverse import OpenverseSource
+from imgagent.sources.pinterest import PinterestSource
 from imgagent.sources.wikimedia import WikimediaSource
 
 _BUILTIN = {
     "wikimedia": WikimediaSource,
     "openverse": OpenverseSource,
     "duckduckgo": DuckDuckGoSource,
+    "pinterest": PinterestSource,  # best-effort, opt-in (not in DEFAULT_SOURCES)
     "generic": GenericSource,
 }
 

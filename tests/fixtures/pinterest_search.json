@@ -1,0 +1,42 @@
+{
+  "resource_response": {
+    "data": [
+      {
+        "type": "pin",
+        "id": "1477812317536479",
+        "title": "Norway Fjord Village",
+        "description": "A village at the end of a fjord",
+        "images": {
+          "orig": {"url": "https://i.pinimg.com/originals/cd/e8/17/cde81773edc15fa114c9e38a7c66cc5f.png", "width": 1000, "height": 1500},
+          "736x": {"url": "https://i.pinimg.com/736x/cd/e8/17/cde81773edc15fa114c9e38a7c66cc5f.jpg", "width": 736, "height": 1104},
+          "236x": {"url": "https://i.pinimg.com/236x/cd/e8/17/cde81773edc15fa114c9e38a7c66cc5f.jpg", "width": 236, "height": 354}
+        },
+        "link": "https://example.org/travel/norway",
+        "pinner": {"username": "fjordfan"},
+        "board": {"name": "Norway Travel"},
+        "repin_count": 42
+      },
+      {
+        "type": "pin",
+        "id": "2468013579246801",
+        "grid_title": "Geirangerfjord sunset",
+        "auto_alt_text": "sunset over the fjord",
+        "images": {
+          "736x": {"url": "https://i.pinimg.com/736x/ab/cd/ef/abcdef1234567890abcdef1234567890.jpg", "width": 736, "height": 1104},
+          "236x": {"url": "https://i.pinimg.com/236x/ab/cd/ef/abcdef1234567890abcdef1234567890.jpg", "width": 236, "height": 354}
+        }
+      },
+      {
+        "type": "pin",
+        "id": "3690258147369025",
+        "title": "external host image must be filtered",
+        "images": {
+          "orig": {"url": "https://cdn.example.org/images/photo.jpg", "width": 900, "height": 600}
+        }
+      },
+      {"type": "board", "id": "board-1", "name": "Norway", "images": {}},
+      {"type": "ad", "id": "ad-campaign-1"}
+    ],
+    "bookmark": "-end-"
+  }
+}

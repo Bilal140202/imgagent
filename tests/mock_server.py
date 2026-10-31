@@ -12,8 +12,11 @@ import json
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 from PIL import Image, ImageDraw
+
+_FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def make_png(width: int = 100, height: int = 80, color=(120, 40, 200)) -> bytes:
@@ -69,6 +72,11 @@ class MockServer:
     /redirect/img          -> 302 -> /img/png/1 (allowed hop)
     /page/og               -> HTML page with og:image / JSON-LD / <img>
     /headers               -> echoes headers+query as JSON (UA test)
+    /resource/BaseSearchResource/get/ -> Pinterest fixture JSON (pinterest_search.json);
+                              a /pinterest-prefixed base serves the soft-gate envelope
+                              (pinterest_softblock.json) instead
+    /search/pins/          -> Pinterest SSR HTML (pinterest_search.html); q=shelltest
+                              serves the app-shell variant (pinterest_shell.html)
     """
 
     def __init__(self):
@@ -81,6 +89,10 @@ class MockServer:
         self._html_page = self._page_html().encode()
         self._html_as_image = b"<html><body>not an image</body></html>"
         self._corrupt = b"\x89PNG\r\n\x1a\n" + b"\x00garbage" * 40
+        self._pinterest_json = (_FIXTURES / "pinterest_search.json").read_bytes()
+        self._pinterest_softblock = (_FIXTURES / "pinterest_softblock.json").read_bytes()
+        self._pinterest_ssr = (_FIXTURES / "pinterest_search.html").read_bytes()
+        self._pinterest_shell = (_FIXTURES / "pinterest_shell.html").read_bytes()
 
     def _page_html(self) -> str:
         return """<!doctype html><html><head>
@@ -197,6 +209,13 @@ class MockServer:
                     payload = {"ua": self.headers.get("User-Agent", ""), "query": params,
                                "path": path}
                     self._send(200, json.dumps(payload).encode(), "application/json")
+                elif path.endswith("/resource/BaseSearchResource/get/"):
+                    # base_url containing /pinterest simulates the soft-gate envelope variant
+                    body = server._pinterest_softblock if path.startswith("/pinterest") else server._pinterest_json
+                    self._send(200, body, "application/json")
+                elif path.endswith("/search/pins/"):
+                    body = server._pinterest_shell if params.get("q") == "shelltest" else server._pinterest_ssr
+                    self._send(200, body, "text/html; charset=utf-8")
                 elif path == "/notfound":
                     self._send(404, b"nope", "text/plain")
                 else:

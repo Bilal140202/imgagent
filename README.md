@@ -60,7 +60,7 @@ imgagent agent-instructions
 
 ```
 INPUT QUERY
-→ SEARCH MULTIPLE SOURCES      (wikimedia · openverse · duckduckgo · custom official APIs)
+→ SEARCH MULTIPLE SOURCES      (wikimedia · openverse · duckduckgo · pinterest · custom official APIs)
 → NORMALIZE RESULTS            (single ImageCandidate schema, versioned)
 → RANK RELEVANCE               (text + entity + technical + rights, deterministic, no LLM)
 → DEDUPLICATE                  (cross-provider URL dedup; SHA-256 + perceptual near-dup)
@@ -81,6 +81,7 @@ in `errors[]`, and a partial success is explicitly represented in the JSON paylo
 | `wikimedia` | Official MediaWiki API            | no      | yes     | tested | License metadata, originals, best historical coverage |
 | `openverse` | Official Openverse API            | optional (`OPENVERSE_API_KEY`) | yes | tested | CC/public-domain focus, rights-cleared mode |
 | `duckduckgo`| Community vqd flow (unofficial)   | no      | yes     | best-effort | Volatile; failures are graceful and explicit |
+| `pinterest` | Unofficial keyless surfaces (resource endpoint + SSR JSON) | no | opt-in | best-effort | Pinterest gates results by IP reputation; rights stay `unknown`; pass `--sources pinterest` |
 | `generic`   | Webpage extractor (og:image, JSON-LD, `<img>`) | no | inspect-only | tested | Also resolves public Pinterest pin pages as page references |
 | `custom:*`  | Config-driven official APIs (Unsplash, Pexels, your own) | per-config | opt-in | tested | Declared in `config.toml [sources.custom.*]` |
 

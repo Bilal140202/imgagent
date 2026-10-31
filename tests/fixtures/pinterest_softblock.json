@@ -1,0 +1,19 @@
+{
+  "resource_response": {
+    "code": 0,
+    "endpoint_name": "BaseSearchResource",
+    "http_status": 200,
+    "message": "",
+    "status": "success",
+    "data": {
+      "clientTrackingParams": "CwABAAAADDQ5ODQyNTg3NTczODQzNDIGAAMACAsADQAAABA0OTg0MjU4NzU3Mzg0MzQyAA",
+      "shouldAppendGlobalSearch": false,
+      "results": [],
+      "rankedGuides": [],
+      "sensitivity": {}
+    }
+  },
+  "client_context": {},
+  "resource": {"name": "BaseSearchResource"},
+  "request_identifier": "soft-gate-envelope"
+}

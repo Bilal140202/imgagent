@@ -7,10 +7,11 @@
 > even if your context was compacted.
 
 imgagent discovers, ranks, downloads and **verifies** images from public
-sources (Wikimedia Commons, Openverse, DuckDuckGo image results, any generic
-web page, plus your own API providers). It never hands you a file it did not
-fully decode, hash and record in a manifest. It runs fully deterministic —
-no LLM, no browser, no paid API for the default workflow.
+sources (Wikimedia Commons, Openverse, DuckDuckGo image results, best-effort
+Pinterest pins, any generic web page, plus your own API providers). It never
+hands you a file it did not fully decode, hash and record in a manifest. It
+runs fully deterministic — no LLM, no browser, no paid API for the default
+workflow.
 
 ---
 
@@ -154,6 +155,7 @@ prints. Install once via `pip install "imgagent[mcp]"`.
 | Exit 3 | Config/dependency problem | Check `IMGAGENT_WORKSPACE` writability, config.toml syntax, Pillow present |
 | Download stuck / slow | Source throttling | Cancel (Ctrl-C → exit 130); rerun is idempotent — verified files are reused, only missing ones download |
 | `rights_status: "unknown"` everywhere | Sources gave no license metadata | Keep `--require-reuse-rights` on; don't downgrade the gate; use Wikimedia/Openverse which carry licenses |
+| `pinterest` in `errors[]` (403 / app shell) | Pinterest gates results by IP reputation; datacenter IPs are commonly excluded | Expected for unofficial keyless access — use a residential network, or drop `pinterest` via `--sources`; never try to bypass |
 | SSRF/private-IP rejection in `errors[]` | Security guard fired (correct) | Do not bypass; the target is non-public — that's by design |
 
 **Idempotency guarantee:** re-running any stage is safe. Candidate IDs are

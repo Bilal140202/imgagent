@@ -174,3 +174,11 @@ MIT — see [LICENSE](LICENSE). imgagent was built as an independent implementat
 the architecture of projects like gallery-dl (GPL) and img2dataset (Apache-2.0) **without
 copying their code**. Downloaded images carry their own licenses — the manifest records them;
 you are responsible for respecting them at publication time.
+
+---
+
+## Project status
+
+**Completed project** — verified in the portfolio audit of **7 November 2026** (README, codebase and project state reviewed).
+
+_Last verified: 7 November 2026_
